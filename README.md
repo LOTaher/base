@@ -19,7 +19,7 @@ Laith's preferred C style guide.
 - Enums should be in `Type_Member` case.
 - Functions should be in `snake_case` with the domain first.
 - Variables should be in `snake_case`.
-- Globals should use the `global` keyword in `PascalCase` pre-pended with 'Global'
+- Globals should use the `global` keyword in `PascalCase` pre-pended with 'G\_'
 - Hash defines should be in `ALL_CAPS`
 - Utility macros should be in `PascalCase`
 - Function macros should be in `snake_case`
