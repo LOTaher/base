@@ -1,8 +1,6 @@
 #ifndef BASE_H
 #define BASE_H
 
-// lt: Utility library used by Laith Taher for all C Programming. It is meant to be imported in all C files I use and work on all systems
-
 #include <stdint.h>
 
 ////////////////////////////////
