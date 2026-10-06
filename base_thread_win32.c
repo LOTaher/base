@@ -1,20 +1,20 @@
 #if defined(_WIN32)
-#include "lt.h"
+#include "base.h"
 #include <windows.h>
 #include <stdlib.h>
 
-// NOTE(laith): Windows requires a thread proc shaped DWORD WINAPI(*)(LPVOID),
-// but Thread_Func is a simple void(*)(void*). This small heap-allocated struct
+// lt: Windows requires a thread proc shaped DWORD WINAPI(*)(LPVOID),
+// but ThreadFunc is a simple void(*)(void*). This small heap-allocated struct
 // plus trampoline function bridges the two signatures.
 typedef struct {
-    Thread_Func func;
+    ThreadFunc func;
     void* arg;
 } ThreadStartData;
 
-static DWORD WINAPI thread_trampoline(LPVOID param)
+internal DWORD WINAPI thread_trampoline(LPVOID param)
 {
     ThreadStartData* data = (ThreadStartData*)param;
-    Thread_Func func = data->func;
+    ThreadFunc func = data->func;
     void* arg = data->arg;
     free(data);
 
@@ -23,7 +23,7 @@ static DWORD WINAPI thread_trampoline(LPVOID param)
     return 0;
 }
 
-Thread lt_thread_create(Thread_Func func, void* arg)
+Thread thread_create(ThreadFunc func, void* arg)
 {
     ThreadStartData* data = (ThreadStartData*)malloc(sizeof(ThreadStartData));
     if (data == NULL) {
@@ -38,10 +38,10 @@ Thread lt_thread_create(Thread_Func func, void* arg)
         return (Thread){0};
     }
 
-    return (Thread){(u64)h};
+    return (Thread){(U64)h};
 }
 
-void lt_thread_join(Thread thread)
+void thread_join(Thread thread)
 {
     HANDLE h = (HANDLE)thread.handle;
     WaitForSingleObject(h, INFINITE);
@@ -50,5 +50,5 @@ void lt_thread_join(Thread thread)
 
 #endif // _WIN32
 
-// NOTE(laith): external declaration to prevent warning C4206 from MSVC (empty translation unit)
+// lt: external declaration to prevent warning C4206 from MSVC (empty translation unit)
 typedef int _compile;

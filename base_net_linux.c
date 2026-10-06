@@ -1,6 +1,6 @@
 #if defined(__linux__) || defined(__unix__) || defined(__APPLE__)
 
-#include "lt.h"
+#include "base.h"
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -12,37 +12,37 @@
 #include <string.h>
 #include <stdio.h>
 
-b32 lt_net_init(void)
+B32 net_init(void)
 {
-    // NOTE(laith): no global init step needed on POSIX, unlike WSAStartup on win32.
+    // lt: no global init step needed on POSIX, unlike WSAStartup on win32.
     return TRUE;
 }
 
-void lt_net_shutdown(void)
+void net_shutdown(void)
 {
-    // NOTE(laith): no global shutdown step needed on POSIX, unlike WSACleanup on win32.
+    // lt: no global shutdown step needed on POSIX, unlike WSACleanup on win32.
 }
 
-Socket lt_net_socket_create(Net_Protocol protocol)
+Socket net_socket_create(NetProtocol protocol)
 {
-    int type = (protocol == LT_NET_TCP) ? SOCK_STREAM : SOCK_DGRAM;
+    int type = (protocol == NetProtocol_TCP) ? SOCK_STREAM : SOCK_DGRAM;
     int fd = socket(AF_INET, type, 0);
 
-    return (Socket){(u64)fd};
+    return (Socket){(U64)fd};
 }
 
-b32 lt_net_socket_is_valid(Socket sock)
+B32 net_socket_is_valid(Socket sock)
 {
-    // NOTE(laith): a failed socket() returns -1 on POSIX, NOT all-bits-set like win32.
-    return (i64)sock.handle >= 0;
+    // lt: a failed socket() returns -1 on POSIX, NOT all-bits-set like win32.
+    return (I64)sock.handle >= 0;
 }
 
-void lt_net_socket_close(Socket sock)
+void net_socket_close(Socket sock)
 {
     close((int)sock.handle);
 }
 
-b32 lt_net_socket_bind(Socket sock, u16 port)
+B32 net_socket_bind(Socket sock, U16 port)
 {
     struct sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
@@ -52,12 +52,12 @@ b32 lt_net_socket_bind(Socket sock, u16 port)
     return bind((int)sock.handle, (struct sockaddr*)&addr, sizeof(addr)) == 0;
 }
 
-b32 lt_net_tcp_listen(Socket sock, i32 backlog)
+B32 net_tcp_listen(Socket sock, I32 backlog)
 {
     return listen((int)sock.handle, backlog) == 0;
 }
 
-Socket lt_net_tcp_accept(Socket sock, Net_Addr* out_addr)
+Socket net_tcp_accept(Socket sock, NetAddr* out_addr)
 {
     struct sockaddr_in addr = {0};
     socklen_t addr_len = sizeof(addr);
@@ -67,10 +67,10 @@ Socket lt_net_tcp_accept(Socket sock, Net_Addr* out_addr)
         out_addr->port = ntohs(addr.sin_port);
     }
 
-    return (Socket){(u64)client_fd};
+    return (Socket){(U64)client_fd};
 }
 
-b32 lt_net_tcp_connect(Socket sock, Net_Addr addr)
+B32 net_tcp_connect(Socket sock, NetAddr addr)
 {
     struct sockaddr_in sa = {0};
     sa.sin_family = AF_INET;
@@ -80,31 +80,31 @@ b32 lt_net_tcp_connect(Socket sock, Net_Addr addr)
     return connect((int)sock.handle, (struct sockaddr*)&sa, sizeof(sa)) == 0;
 }
 
-i64 lt_net_tcp_send(Socket sock, const void* data, u64 size)
+I64 net_tcp_send(Socket sock, const void* data, U64 size)
 {
-    return (i64)send((int)sock.handle, data, size, 0);
+    return (I64)send((int)sock.handle, data, size, 0);
 }
 
-i64 lt_net_tcp_recv(Socket sock, void* buf, u64 size)
+I64 net_tcp_recv(Socket sock, void* buf, U64 size)
 {
-    return (i64)recv((int)sock.handle, buf, size, 0);
+    return (I64)recv((int)sock.handle, buf, size, 0);
 }
 
-i64 lt_net_udp_sendto(Socket sock, const void* data, u64 size, Net_Addr addr)
+I64 net_udp_sendto(Socket sock, const void* data, U64 size, NetAddr addr)
 {
     struct sockaddr_in sa = {0};
     sa.sin_family = AF_INET;
     sa.sin_addr.s_addr = htonl(addr.ip);
     sa.sin_port = htons(addr.port);
 
-    return (i64)sendto((int)sock.handle, data, size, 0, (struct sockaddr*)&sa, sizeof(sa));
+    return (I64)sendto((int)sock.handle, data, size, 0, (struct sockaddr*)&sa, sizeof(sa));
 }
 
-i64 lt_net_udp_recvfrom(Socket sock, void* buf, u64 size, Net_Addr* out_addr)
+I64 net_udp_recvfrom(Socket sock, void* buf, U64 size, NetAddr* out_addr)
 {
     struct sockaddr_in sa = {0};
     socklen_t addr_len = sizeof(sa);
-    i64 n = (i64)recvfrom((int)sock.handle, buf, size, 0, (struct sockaddr*)&sa, &addr_len);
+    I64 n = (I64)recvfrom((int)sock.handle, buf, size, 0, (struct sockaddr*)&sa, &addr_len);
     if (out_addr != NULL) {
         out_addr->ip   = ntohl(sa.sin_addr.s_addr);
         out_addr->port = ntohs(sa.sin_port);
@@ -113,13 +113,13 @@ i64 lt_net_udp_recvfrom(Socket sock, void* buf, u64 size, Net_Addr* out_addr)
     return n;
 }
 
-b32 lt_net_resolve(String8 host, u16 port, Net_Addr* out_addr)
+B32 net_resolve(String8 host, U16 port, NetAddr* out_addr)
 {
-    // NOTE(laith): getaddrinfo needs a null-terminated C string; String8 isn't
+    // lt: getaddrinfo needs a null-terminated C string; String8 isn't
     // guaranteed null-terminated, so copy it into a fixed stack buffer first.
     char host_cstr[256];
-    u64 len = MIN(host.length, sizeof(host_cstr) - 1);
-    for (u64 i = 0; i < len; i += 1) {
+    U64 len = Min(host.length, sizeof(host_cstr) - 1);
+    for (U64 i = 0; i < len; i += 1) {
         host_cstr[i] = (char)host.str[i];
     }
     host_cstr[len] = '\0';
@@ -145,14 +145,14 @@ b32 lt_net_resolve(String8 host, u16 port, Net_Addr* out_addr)
     return TRUE;
 }
 
-b32 lt_net_socket_set_blocking(Socket sock, b32 blocking)
+B32 net_socket_set_blocking(Socket sock, B32 blocking)
 {
     int fd = (int)sock.handle;
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) {
         return FALSE;
     }
-    // NOTE(laith): O_NONBLOCK is the inverse of "blocking", so we set/clear it based on the input.
+    // lt: O_NONBLOCK is the inverse of "blocking", so we set/clear it based on the input.
     if (blocking) {
         flags &= ~O_NONBLOCK;
     } else {
@@ -161,14 +161,14 @@ b32 lt_net_socket_set_blocking(Socket sock, b32 blocking)
     return fcntl(fd, F_SETFL, flags) == 0;
 }
 
-b32 lt_net_would_block(void)
+B32 net_would_block(void)
 {
-    // NOTE(laith): errno is must be called after a failing lt_net_udp_recvfrom since its a global
+    // lt: errno is must be called after a failing net_udp_recvfrom since its a global
     return errno == EAGAIN || errno == EWOULDBLOCK;
 }
 
 #endif // __linux__, __unix__, __APPLE__
 
-// NOTE(laith): external declaration to prevent warning C4206 from MSVC (empty translation unit)
+// lt: external declaration to prevent warning C4206 from MSVC (empty translation unit)
 typedef int _compile;
 
